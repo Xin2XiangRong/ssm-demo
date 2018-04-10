@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+	<!-- 引入jdbc配置 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+	<!-- 扫描文件 -->
+	<context:component-scan base-package="org.chai.service"></context:component-scan>
+	<!-- 配置注解扫描 -->
+	<!-- <context:annotation-config/> -->
+
+	<!-- 数据库连接池 -->
+	
+	<!-- <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${jdbc_driver}" />
+		<property name="url" value="${jdbc_url}" />
+		<property name="username" value="${jdbc_username}" />
+		<property name="password" value="${jdbc_password}" />
+		<property name="initialSize" value="${jdbc_initialSize}" />
+		<property name="maxActive" value="${jdbc_maxActive}" />
+		<property name="maxIdle" value="${jdbc_maxIdle}" />
+		<property name="minIdle" value="${jdbc_minIdle}" />
+		<property name="maxWait" value="${jdbc_maxWait}" />
+	</bean> -->
+	
+	<!-- 配置sqlSessionFactory,并将数据注入 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 注入数据源 -->
+		<property name="dataSource" ref="dataSource" />
+		<!-- 载入mybatis配置文件 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml" />
+		<!-- 载入配置mapper映射的xml -->
+		<property name="mapperLocations" value="classpath:mapper/*.xml" />
+	</bean>
+	
+	<!-- 扫描mybatis映射接口类,创建数据映射器 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="org.chai.dao" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+	</bean>
+
+	<!-- druid数据源 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+		<property name="url" value="${jdbc_url}"/>
+		<property name="password" value="${jdbc_password}"/>
+		<property name="username" value="${jdbc_username}"/>
+		
+		<!-- 配置初始化大小\最小\最大 -->
+		<property name="initialSize" value="${datasource_initialSize}"/>
+		<property name="minIdle" value="${datasource_minIdle}"/>
+		<property name="maxActive" value="${datasource_maxActive}"/>
+		
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="${datasource_maxWait}"/>
+		<!-- 有两个含义：1) Destroy线程会检测连接的间隔时间 2) testWhileIdle的判断依据   配置间隔多久才进行一次检测,检测需要关闭的空闲连接,单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="${datasource_timeBetweenEvictionRunsMillis}"></property>
+		<!-- 配置一个连接在池中最小生存的时间 -->
+		<property name="minEvictableIdleTimeMillis" value="${datasource_minEvictableIdleTimeMillis}"></property>
+		<!-- 用来检测连接是否有效的sql,要求是一个查询语句.如果validationQuery为null,testOnBorrow\testOnReturn\testWhileIdle都不会起作用 -->
+		<property name="validationQuery" value="${datasource_validationQuery}"/>
+		<!-- 建议配置为true,不影响性能,并且保证安全性.申请连接的时候检测,如果空闲时间大于timeBetweenEvictionRunsMills,执行validationQuery检测连接是否有效 -->
+		<property name="testWhileIdle" value="${datasource_testWhileIdle}"></property>
+		<!-- 申请连接时执行validationQuery检测连接是否有效,做了这个配置会降低性能 -->
+		<property name="testOnBorrow" value="${datasource_testOnBorrow}"></property>
+		<!-- 归还连接时执行validationQuery检测连接是否有效,做了这个配置会降低性能 -->
+		<property name="testOnReturn" value="${datasource_testOnReturn}"/>
+		<!-- 打开PSCache,并且指定每个连接上PSCache的大小 -->
+		<property name="poolPreparedStatements" value="${datasource_poolPreparedStatements}"/>
+		<property name="maxPoolPreparedStatementPerConnectionSize" value="${datasource_maxPoolPreparedStatementPerConnectionSize}"/>
+		<!-- 配置监控统计拦截的filters 属性类型是字符串，
+		通过别名的方式配置扩展插件，常用的插件有：监控统计用的filter:stat，日志用的filter:slf4j，防御sql注入的filter:wall-->
+		<property name="filters" value="stat"></property>
+	</bean>
+	
+	<!-- 基于注解的事务管理 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+		<property name="globalRollbackOnParticipationFailure" value="false" />
+	</bean>
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	
+</beans>
+
